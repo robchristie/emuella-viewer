@@ -36,6 +36,8 @@ jobs:
           prefix-key: v1-emuella-viewer
           shared-key: ${{ matrix.stage }}
           save-if: ${{ github.event_name == 'push' }}
+          # The stobie and wasm-bindgen CLIs have their own cache below.
+          cache-bin: false
       - uses: actions/setup-node@v5
         with:
           node-version: 25.8.2
@@ -44,7 +46,9 @@ jobs:
       - name: Install system prerequisites
         run: |
           sudo apt-get update
-          sudo apt-get install --yes python3-gdal python3-numpy
+          if [[ "${{ matrix.stage }}" == checks ]]; then
+            sudo apt-get install --yes python3-gdal python3-numpy
+          fi
           if [[ "${{ matrix.stage }}" == browser ]]; then
             sudo apt-get install --yes libegl-mesa0 libegl1 libgl1-mesa-dri libglx-mesa0 libglx0 libxkbcommon-x11-0 mesa-vulkan-drivers xvfb
           fi

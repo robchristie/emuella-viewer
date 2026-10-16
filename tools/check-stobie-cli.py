@@ -38,8 +38,17 @@ def cli_revision(stobie: str) -> str | None:
     return match.group(1) if match else None
 
 
+def patched(config: Path = ROOT / ".cargo/config.toml") -> bool:
+    """Whether a local `[patch]` builds Stobie from a checkout instead of the pin."""
+    return config.is_file() and STOBIE_GIT in tomllib.loads(config.read_text()).get("patch", {})
+
+
 def main() -> int:
     revision = pinned_revision()
+    if patched():
+        # The CLI then comes from that checkout, not from the pinned revision.
+        print("note: .cargo/config.toml patches Stobie; not checking the CLI's revision", file=sys.stderr)
+        return 0
     stobie = os.environ.get("STOBIE", "stobie")
     install = f"cargo install --locked --force --git {STOBIE_GIT} --rev {revision} stobie-cli"
     try:
