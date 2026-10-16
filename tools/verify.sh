@@ -30,8 +30,9 @@ for stage in "${stages[@]}"; do
       # Stobie's agent tooling stays out of the viewer, natively and for the web.
       for target in "" wasm32-unknown-unknown; do
         echo "+ cargo tree -p emuella-viewer ${target:+--target $target}"
-        if cargo tree "${LOCKED[@]}" -p emuella-viewer ${target:+--target "$target"} -e normal --prefix none --format '{p}' \
-          | grep -E '^(stobie-cli|stobie-build|stobie-client|lantern-core|tungstenite|ureq) '; then
+        # Capture first, so a failing `cargo tree` stops the stage.
+        tree="$(cargo tree "${LOCKED[@]}" -p emuella-viewer ${target:+--target "$target"} -e normal,build --prefix none --format '{p}')"
+        if grep -E '^(stobie-cli|stobie-build|stobie-client|lantern-core|tungstenite|ureq) ' <<<"$tree"; then
           echo "emuella-viewer must not depend on Stobie's agent tooling" >&2
           exit 1
         fi
