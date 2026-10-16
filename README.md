@@ -40,9 +40,9 @@ The browser build needs WebGPU.
 
 Stobie is a git dependency pinned to one revision in [`Cargo.toml`](Cargo.toml),
 and the `stobie` CLI builds the browser package. The viewer uses Stobie's image
-layer directly (`stobie-imaging`, `stobie-runtime`, `stobie-render-wgpu`
-with its regional renderer, and `stobie-ui-egui`) rather than Stobie's
-application host.
+layer directly (`stobie-core`, `stobie-imaging`, `stobie-runtime`,
+`stobie-render-wgpu` with its regional renderer, and `stobie-ui-egui`) rather
+than Stobie's application host.
 
 ## Later work
 
@@ -54,4 +54,6 @@ application host.
 ## Licence
 
 [Apache License 2.0](LICENSE), as Stobie. The Emuella codec dependencies are
-Apache-2.0 (`emuella-j2k-codestream` is Apache-2.0 AND BSD-2-Clause).
+Apache-2.0; `emuella-j2k-codestream`, `emuella-j2k-ht` and `emuella-j2k-accel`
+are Apache-2.0 AND BSD-2-Clause, whose attribution applies to distributed
+binaries.

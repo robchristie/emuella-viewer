@@ -17,6 +17,17 @@ def manifest(*lines: str) -> Path:
     return path
 
 
+class Patched(unittest.TestCase):
+    def test_only_a_stobie_patch_counts(self):
+        directory = Path(tempfile.mkdtemp())
+        config = directory / "config.toml"
+        self.assertFalse(check.patched(config))
+        config.write_text('[patch."https://github.com/other/repo"]\nx = { path = "/x" }\n')
+        self.assertFalse(check.patched(config))
+        config.write_text(f'[patch."{check.STOBIE_GIT}"]\nstobie-core = {{ path = "/s/crates/stobie-core" }}\n')
+        self.assertTrue(check.patched(config))
+
+
 class PinnedRevision(unittest.TestCase):
     def test_one_full_revision_is_accepted(self):
         path = manifest(*(f'stobie-{name} = {{ git = "{check.STOBIE_GIT}", rev = "{REV}" }}' for name in ("core", "ui-egui")))

@@ -35,8 +35,10 @@ bash tools/verify.sh
 It runs three stages, which CI runs as separate jobs; `bash tools/verify.sh
 STAGE` runs one:
 
-- `checks`: formatting, native and WASM Clippy, the Rust tests, the Python and
-  Node tool tests and the worker tests.
+- `checks`: the tracked-file policy (no imagery, prepared scenes, raw
+  evidence or oversized files), formatting, native and WASM Clippy, the Rust
+  tests, a check that Stobie's agent tooling stays out of the viewer's
+  dependencies, the Python and Node tool tests and the worker tests.
 - `native`: the release build of the whole workspace.
 - `browser`: checks that `stobie` matches the pinned revision, builds the
   viewer with `stobie build-web` and checks the worker's response adapter
@@ -76,7 +78,10 @@ the CLI against it.
   ```
 
   Cargo still fetches the pinned revision to resolve the patch. Use that
-  checkout's `stobie` (`STOBIE=/path/to/stobie/target/release/stobie`).
+  checkout's `stobie` (`STOBIE=/path/to/stobie/target/release/stobie`); while
+  the patch is active, `tools/verify.sh` builds without `--locked` and does not
+  check the CLI's revision. A patched build rewrites `Cargo.lock`'s Stobie
+  sources: never commit that, and remove the patch before landing.
 
 Framework contracts the viewer relies on are owned by Stobie: the
 [regional adapter contract](https://github.com/robchristie/stobie/blob/main/docs/regional-adapter-contract.md),
@@ -86,7 +91,8 @@ and the image layer's crate boundaries. Change them there first.
 ## Evidence
 
 Never commit raw captures such as screenshots, logs or runtime observation
-dumps, local imagery or prepared scenes. Write them under ignored `.tools/` or
+dumps, local imagery or prepared scenes; `tools/check-tracked-files.py`
+enforces this. Write them under ignored `.tools/` or
 registered campaign scratch. Durable raw evidence goes to a new commit in the
 append-only [stobie-evidence](https://github.com/robchristie/stobie-evidence)
 archive (never rewrite its history), and reports link to it by permalink.

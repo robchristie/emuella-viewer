@@ -22,10 +22,21 @@ fi
 for stage in "${stages[@]}"; do
   case "$stage" in
     checks)
+      run python3 tools/check-tracked-files.py
       run cargo fmt --all --check
       run cargo clippy "${LOCKED[@]}" --workspace --all-targets --all-features -- -D warnings
       run cargo clippy "${LOCKED[@]}" --target wasm32-unknown-unknown -p emuella-viewer -- -D warnings
       run cargo test "${LOCKED[@]}" --workspace
+      # Stobie's agent tooling stays out of the viewer, natively and for the web.
+      for target in "" wasm32-unknown-unknown; do
+        echo "+ cargo tree -p emuella-viewer ${target:+--target $target}"
+        # Capture first, so a failing `cargo tree` stops the stage.
+        tree="$(cargo tree "${LOCKED[@]}" -p emuella-viewer ${target:+--target "$target"} -e normal,build --prefix none --format '{p}')"
+        if grep -E '^(stobie-cli|stobie-build|stobie-client|lantern-core|tungstenite|ureq) ' <<<"$tree"; then
+          echo "emuella-viewer must not depend on Stobie's agent tooling" >&2
+          exit 1
+        fi
+      done
       run python3 -m unittest discover -s tools/tests
       run npm ci
       run node --test tools/tests/*.test.mjs apps/emuella-viewer/web/tests/worker.test.mjs
