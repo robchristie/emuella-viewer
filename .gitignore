@@ -1,0 +1,9 @@
+/target/
+/node_modules/
+/.tools/
+# Local Stobie checkout overrides; see CONTRIBUTING.md.
+/.cargo/config.toml
+__pycache__/
+# Written by `stobie build-web`.
+/apps/emuella-viewer/web/pkg/
+/apps/emuella-viewer/web/browser-startup.js

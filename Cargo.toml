@@ -1,0 +1,39 @@
+[workspace]
+members = [
+    "apps/emuella-viewer",
+    "apps/emuella-viewer-tools",
+    "crates/emuella-viewer-source",
+]
+resolver = "3"
+
+[workspace.package]
+version = "0.1.6"
+edition = "2024"
+rust-version = "1.97.1"
+license = "Apache-2.0"
+repository = "https://github.com/robchristie/emuella-viewer"
+
+[workspace.dependencies]
+anyhow = "1.0.100"
+eframe = { version = "0.36.1", default-features = false, features = ["accesskit", "default_fonts", "persistence", "wgpu", "x11", "wayland"] }
+egui = { version = "0.36.1", features = ["serde"] }
+egui-wgpu = "0.36.1"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.149"
+wasm-bindgen = "0.2.127"
+wasm-bindgen-futures = "0.4.57"
+web-sys = "0.3.82"
+web-time = "1.1.0"
+wgpu = "30.0.1"
+# Stobie is not on crates.io: every Stobie crate names this one revision.
+# To upgrade, change it in all five lines, run `cargo update`, and install the
+# `stobie` CLI from the same revision. See CONTRIBUTING.md.
+stobie-core = { git = "https://github.com/robchristie/stobie", rev = "8bfcdd6d55776365cfcb2e672b76c9548abba792" }
+stobie-imaging = { git = "https://github.com/robchristie/stobie", rev = "8bfcdd6d55776365cfcb2e672b76c9548abba792" }
+stobie-runtime = { git = "https://github.com/robchristie/stobie", rev = "8bfcdd6d55776365cfcb2e672b76c9548abba792" }
+stobie-render-wgpu = { git = "https://github.com/robchristie/stobie", rev = "8bfcdd6d55776365cfcb2e672b76c9548abba792" }
+stobie-ui-egui = { git = "https://github.com/robchristie/stobie", rev = "8bfcdd6d55776365cfcb2e672b76c9548abba792" }
+
+[profile.release]
+lto = "thin"
+codegen-units = 1

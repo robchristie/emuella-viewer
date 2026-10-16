@@ -1,0 +1,87 @@
+name: verify
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  stage:
+    name: Verify ${{ matrix.stage }}
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        stage: [checks, native, browser]
+    env:
+      CARGO_TERM_COLOR: always
+      STOBIE_USE_SYSTEM_UI_LIBS: '1'
+      STOBIE_BROWSER_HEADFUL: '1'
+      DISPLAY: ':95'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.99.0
+        with:
+          targets: wasm32-unknown-unknown
+          components: clippy, rustfmt
+      - uses: Swatinem/rust-cache@v2
+        with:
+          prefix-key: v1-emuella-viewer
+          shared-key: ${{ matrix.stage }}
+          save-if: ${{ github.event_name == 'push' }}
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 25.8.2
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Install system prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes python3-gdal python3-numpy
+          if [[ "${{ matrix.stage }}" == browser ]]; then
+            sudo apt-get install --yes libegl-mesa0 libegl1 libgl1-mesa-dri libglx-mesa0 libglx0 libxkbcommon-x11-0 mesa-vulkan-drivers xvfb
+          fi
+      - name: Read the pinned Stobie revision
+        if: matrix.stage == 'browser'
+        id: stobie
+        run: echo "rev=$(python3 -c 'import tomllib; print(tomllib.load(open("Cargo.toml","rb"))["workspace"]["dependencies"]["stobie-core"]["rev"])')" >> "$GITHUB_OUTPUT"
+      - name: Restore the stobie and wasm-bindgen CLIs
+        if: matrix.stage == 'browser'
+        id: tools
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/stobie
+            ~/.cargo/bin/wasm-bindgen
+          key: tools-${{ runner.os }}-stobie-${{ steps.stobie.outputs.rev }}-wasm-bindgen-0.2.127
+      - name: Install the stobie and wasm-bindgen CLIs
+        if: matrix.stage == 'browser' && steps.tools.outputs.cache-hit != 'true'
+        run: |
+          cargo install --locked --git https://github.com/robchristie/stobie --rev "${{ steps.stobie.outputs.rev }}" stobie-cli
+          cargo install --locked wasm-bindgen-cli --version 0.2.127
+      - name: Start Xvfb
+        if: matrix.stage == 'browser'
+        run: |
+          Xvfb "$DISPLAY" -screen 0 1440x1000x24 -nolisten tcp +extension GLX >/tmp/xvfb.log 2>&1 &
+          sleep 1
+      - name: Install Chromium prerequisites
+        if: matrix.stage == 'browser'
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - run: bash tools/verify.sh "${{ matrix.stage }}"
+
+  verify:
+    name: verify
+    if: always()
+    needs: [stage]
+    runs-on: ubuntu-24.04
+    steps:
+      - run: test "${{ needs.stage.result }}" = success
